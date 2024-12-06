@@ -22,6 +22,8 @@ import java.util.regex.Pattern;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 
 public class WinReservas extends javax.swing.JFrame {
@@ -36,6 +38,29 @@ public class WinReservas extends javax.swing.JFrame {
         listaServicos();  // List available services
         setLocationRelativeTo(null);  // Center the window on the screen
 
+        // Listener for changes in the table
+        tabelaReservas.addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent e) {
+                if (e.getType() == TableModelEvent.UPDATE) {  // Check if the table data was updated
+                    int row = e.getFirstRow();  // Get the updated row index
+
+                    // Get the updated values from the row
+                    int id = Integer.parseInt(tabelaReservas.getValueAt(row, 0).toString());  // ID (first column)
+                    String hospede = tabelaReservas.getValueAt(row, 1).toString();  // Tipo (second column)
+                    String quarto = tabelaReservas.getValueAt(row, 2).toString();  // Tipo (second column)
+                    String servicos = tabelaReservas.getValueAt(row, 3).toString();  // Tipo (second column)
+                    String entrada = tabelaReservas.getValueAt(row, 4).toString();  // Tipo (second column)
+                    String saida = tabelaReservas.getValueAt(row, 5).toString();  // Tipo (second column)
+                    double total = Double.parseDouble(tabelaReservas.getValueAt(row, 6).toString()); // Tipo (second column) by flarom parse String mathiack feat monari n bertua
+                    String pagamento = tabelaReservas.getValueAt(row, 7).toString();  // Tipo (second column)
+
+                    // Update the database with the modified row data
+                    atualizarPelaTabelaR(id, hospede, quarto, servicos, entrada, saida, total, pagamento);
+                }
+            }
+        });
+        
         // Add functionality to delete selected reservations with the Delete key
         JTreservas.addKeyListener(new KeyAdapter() {
             @Override
@@ -338,10 +363,39 @@ public class WinReservas extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    // Method to update room reservation data in the database
+    private static void atualizarPelaTabelaR(int id, String hospede, String quarto, String servicos, String entrada, String saida, double total, String pagamento) {
+        try (Connection conn = Database.getConnection()) {
+            // SQL query to update room reservation
+            String query = "UPDATE quartos SET tipo = ?, numero = ?, preco = ? WHERE id_quarto = ?";
+            PreparedStatement stmt = conn.prepareStatement(query);
+
+            // Set the updated values in the prepared statement
+            stmt.setString(1, hospede);      // Set the tipo (room type)
+            stmt.setString(2, quarto);    // Set the room number
+            stmt.setString(3, servicos);    // Set the room number
+            stmt.setString(4, entrada);    // Set the room number
+            stmt.setString(5, saida);    // Set the room number
+            stmt.setDouble(6, total);     // Set the room price
+            stmt.setString(7, pagamento);    // Set the room number
+            stmt.setInt(8, id);           // Set the room ID
+
+            int rowsAffected = stmt.executeUpdate();  // Execute the update query
+            if (rowsAffected > 0) {
+                System.out.println("Dados atualizados no banco de dados!");
+            } else {
+                JOptionPane.showMessageDialog(null, "Nenhum dado foi encontrado com o ID fornecido.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Erro ao salvar no banco de dados: " + ex.getMessage());
+        }
+    }
+    
     // Function to delete a reservation from the database
     private static void excluirPelaTabelaR(int id) {
         try (Connection conn = Database.getConnection()) {  // Get connection to the database
-            String query = "DELETE FROM quartosreservados WHERE id_quartoReservado = ?";  // SQL query to delete reservation
+            String query = "DELETE FROM reservas WHERE id_reserva = ?";  // SQL query to delete reservation
             PreparedStatement stmt = conn.prepareStatement(query);
             stmt.setInt(1, id);  // Set the ID value in the query
 
